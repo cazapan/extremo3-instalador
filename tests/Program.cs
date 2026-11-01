@@ -35,6 +35,19 @@ try
     { using var writer=new StreamWriter(z.CreateEntry("../escape.txt").Open()); writer.Write("no"); }
     refused=false; try { Automatic.ExtractRuntime(unsafeZip,Path.Combine(dir,"runtime")); } catch(InvalidDataException) { refused=true; }
     Assert(refused && !File.Exists(Path.Combine(dir,"escape.txt")),"ZIP traversal accepted");
+    var instance=Path.Combine(dir,"Extremo3-test");
+    var bin=Path.Combine(instance,"runtime","java21","bin"); Directory.CreateDirectory(bin);
+    var javaTest=Path.Combine(bin,"java.exe");var javawTest=Path.Combine(bin,"javaw.exe");File.WriteAllText(javaTest,"");File.WriteAllText(javawTest,"");
+    var gameDir=Path.Combine(instance,"game"); Directory.CreateDirectory(gameDir);
+    Core.AtomicJson(Path.Combine(dir,"launcher_profiles.json"),new JsonObject { ["profiles"]=new JsonObject {
+        ["extremo3-test"]=new JsonObject { ["gameDir"]=gameDir,["javaDir"]=javaTest },
+        ["unrelated"]=new JsonObject { ["javaDir"]=javaTest } } });
+    Assert(Repair.Official(dir)==1,"Console repair failed");
+    var repaired=JsonNode.Parse(File.ReadAllText(Path.Combine(dir,"launcher_profiles.json")))!;
+    Assert((string?)repaired["profiles"]!["extremo3-test"]!["javaDir"]==javawTest,"Windowless executable not selected");
+    Assert((string?)repaired["profiles"]!["unrelated"]!["javaDir"]==javaTest,"Unrelated profile changed");
+    Assert(Repair.Official(dir)==0,"Repair not idempotent");
+    Assert(Repair.Windowless(javaTest,Path.Combine(dir,"another-instance"))==null,"External Java path accepted");
     if(args.Contains("--network"))
     {
         var locked=Core.Load();

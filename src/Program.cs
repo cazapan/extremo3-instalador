@@ -147,6 +147,24 @@ public sealed class InstallerForm : Form
         root.Text=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),".minecraft");
         mode.SelectedIndexChanged += (_,_)=>root.Text=mode.SelectedIndex==0 ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),".minecraft") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Extremo3");
         var actions=new FlowLayoutPanel { Width=760, Height=40 }; actions.Controls.AddRange(new Control[]{install,cancel}); panel.Controls.Add(actions);
+        var repair=new Button { Text="Ocultar consola en una instalación existente", AutoSize=true };
+        repair.Click+=(_,_)=>
+        {
+            if(busy) return;
+            try
+            {
+                if(Process.GetProcessesByName("MinecraftLauncher").Length>0 || Process.GetProcessesByName("prismlauncher").Length>0 || Process.GetProcessesByName("javaw").Length>0)
+                    throw new IOException("Cerrá Minecraft y los launchers antes de aplicar la corrección.");
+                var roots=new HashSet<string>(StringComparer.OrdinalIgnoreCase) { Path.GetFullPath(root.Text),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),".minecraft") };
+                foreach(var detectedRoot in Core.Detect().Where(x=>x.Name.StartsWith("Prism Launcher"))) roots.Add(Path.Combine(detectedRoot.Path,"instances"));
+                int changed=0;
+                foreach(var path in roots) { changed+=Repair.Official(path); changed+=Repair.Prism(path); }
+                Note(changed>0 ? $"Listo: {changed} instalación(es) corregida(s). Iniciá Minecraft desde tu launcher habitual." : "No hay instalaciones para corregir en las carpetas seleccionadas. Si es portable, elegí su carpeta desde Cambiar carpeta.");
+            }
+            catch(Exception ex) { Note("No se pudo corregir: "+ex.Message); }
+        };
+        panel.Controls.Add(repair);
         panel.Controls.Add(progress); panel.Controls.Add(log);
         var detected=Core.Detect();
         var prism=detected.FirstOrDefault(x=>x.Name.StartsWith("Prism Launcher"));
@@ -180,7 +198,9 @@ public sealed class InstallerForm : Form
             await Automatic.Fetch(release.ModUrl,Path.Combine(game,"mods",release.ModFile),release.ModSha256,ct);
             Note("Preparando Java 21 para esta instancia…");
             var javaPath=await Automatic.Java(stage,release,ct);
-            var javaRelative=Path.GetRelativePath(stage,javaPath);
+            var javawPath=Path.Combine(Path.GetDirectoryName(javaPath)!,"javaw.exe");
+            if(!File.Exists(javawPath)) throw new IOException("Falta javaw.exe en Java 21.");
+            var javaRelative=Path.GetRelativePath(stage,javawPath);
             var final=Path.Combine(target,"Extremo3-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N")[..6]);
             if(selected==0)
             {

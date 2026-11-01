@@ -11,6 +11,12 @@ Instalador para Windows x64. Los jugadores ejecutan **InstalarExtremo.exe**, cie
 - En Prism, crea directamente una instancia con Java privado, el mod y las versiones exactas. En el primer inicio Prism descarga Minecraft/NeoForge y sus bibliotecas. No requiere importar ZIP.
 - En otros launchers, descarga y prepara todo lo necesario y genera PASOS.txt. Hay que crear la instancia desde ese launcher y elegir su carpeta de juego. No existe un formato universal para automatizar cualquier launcher.
 
+## Corrección de consola (1.0.1)
+
+Las instalaciones nuevas usan javaw.exe para iniciar el cliente sin ventana de consola; las verificaciones y el instalador de NeoForge siguen usando java.exe de forma oculta. El servidor conserva su consola de administración.
+
+Para instalaciones anteriores: cerrar Minecraft y los launchers, abrir este EXE y pulsar **Ocultar consola en una instalación existente**. Repara perfiles Extremo3 de esta app en el launcher oficial y configuraciones Prism detectadas, con copia de seguridad. No reinstala ni modifica mundos o mods. Para rutas portables, indicar la carpeta del launcher oficial o la carpeta instances de Prism desde Cambiar carpeta. Después volver a iniciar Minecraft normalmente.
+
 ## Para jugar
 
 1. Descargar el EXE desde [Releases](https://github.com/cazapan/extremo3-instalador/releases).
