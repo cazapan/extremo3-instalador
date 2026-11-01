@@ -43,6 +43,16 @@ try
         var loader=Path.Combine(dir,"loader");
         await Automatic.Vanilla(loader,locked,CancellationToken.None);
         Assert(File.Exists(Path.Combine(loader,"versions","1.21.1","1.21.1.jar")),"Vanilla not downloaded");
+        if(args.Contains("--neo"))
+        {
+            Console.WriteLine("Installing official NeoForge into private test root…");
+            File.WriteAllText(Path.Combine(loader,"launcher_profiles.json"),"{\"profiles\":{}}");
+            var installer=Path.Combine(dir,"neo.jar");
+            await Core.Download($"https://maven.neoforged.net/releases/net/neoforged/neoforge/{locked.NeoForge}/neoforge-{locked.NeoForge}-installer.jar",installer,locked.NeoSha256,CancellationToken.None);
+            using var timeout=new CancellationTokenSource(TimeSpan.FromMinutes(15));
+            await Core.Run(java,new[]{"-jar",installer,"--installClient",loader},dir,timeout.Token);
+            Assert(File.Exists(Path.Combine(loader,"versions","neoforge-"+locked.NeoForge,"neoforge-"+locked.NeoForge+".json")),"NeoForge profile not generated");
+        }
     }
     Console.WriteLine($"PASS: {count} integrity/profile checks");
 }

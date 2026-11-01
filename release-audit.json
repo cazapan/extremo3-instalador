@@ -1,0 +1,29 @@
+{
+  "metadata": "modLoader=\"javafml\"\nloaderVersion=\"[1,)\"\nlicense=\"All Rights Reserved\"\n\n[[mods]]\nmodId=\"mcextremo\"\nversion=\"1.3.1\"\ndisplayName=\"MCExtremo\"\ndescription='''\nMCExtremo transforma la experiencia de Minecraft 1.21.1 con un sistema de 5 vidas, gestión de PvP activable y animaciones personalizadas.\nIncluye comandos para activar/desactivar PvP, modo aleatorio de alternancia, sincronización de estado entre clientes y servidores, sonidos únicos y una animación de muerte en pantalla.\nTambién convierte a los jugadores sin vidas en espectador y ofrece un HUD con notificación del estado PvP en tiempo real.\n'''\n\n[[dependencies.mcextremo]]\n    modId=\"neoforge\"\n    type=\"required\"\n    versionRange=\"[21.1.228,)\"\n    ordering=\"NONE\"\n    side=\"BOTH\"\n\n[[dependencies.mcextremo]]\n    modId=\"minecraft\"\n    type=\"required\"\n    versionRange=\"[1.21.1,1.21.2)\"\n    ordering=\"NONE\"\n    side=\"BOTH\"\n",
+  "dependencies": [
+    {
+      "modId": "neoforge",
+      "type": "required",
+      "versionRange": "[21.1.228,)",
+      "ordering": "NONE",
+      "side": "BOTH"
+    },
+    {
+      "modId": "minecraft",
+      "type": "required",
+      "versionRange": "[1.21.1,1.21.2)",
+      "ordering": "NONE",
+      "side": "BOTH"
+    }
+  ],
+  "mod": {
+    "modId": "mcextremo",
+    "version": "1.3.1",
+    "displayName": "MCExtremo",
+    "description": "MCExtremo transforma la experiencia de Minecraft 1.21.1 con un sistema de 5 vidas, gestión de PvP activable y animaciones personalizadas.\nIncluye comandos para activar/desactivar PvP, modo aleatorio de alternancia, sincronización de estado entre clientes y servidores, sonidos únicos y una animación de muerte en pantalla.\nTambién convierte a los jugadores sin vidas en espectador y ofrece un HUD con notificación del estado PvP en tiempo real.\n"
+  },
+  "licenseDeclaredInJar": "All Rights Reserved",
+  "loaderVersion": "[1,)",
+  "officialFile": "https://www.curseforge.com/minecraft/mc-mods/extreme-3-mechanics/files/8401810",
+  "trust": "Descarga oficial manual confirmada por el organizador; hash SHA-256 calculado localmente. No es una firma del autor."
+}

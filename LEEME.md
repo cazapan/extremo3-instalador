@@ -55,6 +55,8 @@ La preparación contrasta el JAR alojado con el archivo revisado, valida ID, req
 
 ## Fuentes oficiales
 
+Validación de esta versión: 11 comprobaciones locales de integridad/perfiles/URLs/extracción y 4 pruebas de requisitos. Además se descargaron y verificaron Java y Minecraft y se ejecutó el instalador oficial de NeoForge en una carpeta temporal: las 14 comprobaciones C# de la prueba con red e instalación terminaron correctamente. No se probó una partida real ni la ejecución completa de Prism con cuenta de juego.
+
 - [NeoForge: cliente](https://docs.neoforged.net/user/docs/client/) y [Java 21 x64 para 1.21.1](https://docs.neoforged.net/docs/1.21.1/gettingstarted/).
 - [SHA-256 NeoForge 21.1.265](https://maven.neoforged.net/releases/net/neoforged/neoforge/21.1.265/neoforge-21.1.265-installer.jar.sha256).
 - [Temurin Java 21](https://github.com/adoptium/temurin21-binaries/releases).

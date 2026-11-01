@@ -122,30 +122,32 @@ public sealed class InstallerForm : Form
 {
     readonly ComboBox mode = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 660 };
     readonly TextBox root = new() { Width=550 };
-    
-    
     readonly TextBox log = new() { Multiline=true, ReadOnly=true, ScrollBars=ScrollBars.Vertical, Width=760, Height=190 };
-    readonly Button install = new() { Text="Preparar instalación", AutoSize=true };
+    readonly Button install = new() { Text="Instalar", AutoSize=true };
+    readonly ProgressBar progress = new() { Width=760, Height=8, Style=ProgressBarStyle.Marquee, Visible=false };
     readonly Button cancel = new() { Text="Cancelar", AutoSize=true, Enabled=false };
     readonly Release release = Core.Load();
     CancellationTokenSource? cts;
     bool busy;
     public InstallerForm()
     {
-        Text="Extremo 3 · Instalador para amigos"; Width=820; Height=750; MinimumSize=new(820,750); AutoScaleMode=AutoScaleMode.Dpi;
+        Text="Instalar Extremo 3"; Width=820; Height=630; MinimumSize=new(820,630); AutoScaleMode=AutoScaleMode.Dpi;
         var panel = new FlowLayoutPanel { Dock=DockStyle.Fill, FlowDirection=FlowDirection.TopDown, WrapContents=false, Padding=new(18), AutoScroll=true };
         Controls.Add(panel);
         void Label(string text) => panel.Controls.Add(new Label { Text=text, AutoSize=true, MaximumSize=new(760,0), Margin=new(0,8,0,5) });
         Label("Minecraft 1.21.1 · NeoForge " + release.NeoForge + " · Extreme 3 Mechanics v14\nSin cuentas ni contraseñas. Cerrá Minecraft y los launchers antes de continuar.");
-        Label(release.Reviewed ? "Versión fijada por el organizador. El JAR se verifica antes de copiarlo." : "COMPILACIÓN DE PREPARACIÓN: falta fijar el hash del mod oficial. Consultá LEEME.md.");
+        Label(release.Reviewed ? "Pulsá Instalar. Descargaremos y verificaremos todo automáticamente." : "PREPARACIÓN: falta configurar la descarga del mod. Consultá LEEME.md.");
         Label("Detectados: " + string.Join("; ", Core.Detect().Select(x=>x.Name)) + "\nLa detección por carpetas es orientativa; para versiones portables elegí el modo manual.");
-        mode.Items.AddRange(new[] { "Oficial: instalar NeoForge y crear perfil con carpeta aislada", "Prism: crear la instancia autom�ticamente", "Otros / portable: preparar carpeta aislada e instrucciones" }); mode.SelectedIndex=0; panel.Controls.Add(mode);
-        Label("Carpeta del launcher oficial (modo Oficial) / carpeta de salida (otros modos)");
-        panel.Controls.Add(Row(root, "Elegir…", ()=> { using var d=new FolderBrowserDialog(); if(d.ShowDialog()==DialogResult.OK) root.Text=d.SelectedPath; }));
+        mode.Items.AddRange(new[] { "Oficial: instalar NeoForge y crear perfil con carpeta aislada", "Prism: crear la instancia automáticamente", "Otros / portable: preparar carpeta aislada e instrucciones" }); mode.SelectedIndex=0; panel.Controls.Add(mode);
+        var pathRow=Row(root, "Elegir…", ()=> { using var d=new FolderBrowserDialog(); if(d.ShowDialog()==DialogResult.OK) root.Text=d.SelectedPath; });
+        pathRow.Visible=false;
+        var advanced=new Button { Text="Cambiar carpeta…", AutoSize=true };
+        advanced.Click+=(_,_)=>pathRow.Visible=!pathRow.Visible;
+        panel.Controls.Add(advanced); panel.Controls.Add(pathRow);
         root.Text=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),".minecraft");
         mode.SelectedIndexChanged += (_,_)=>root.Text=mode.SelectedIndex==0 ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),".minecraft") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Extremo3");
         var actions=new FlowLayoutPanel { Width=760, Height=40 }; actions.Controls.AddRange(new Control[]{install,cancel}); panel.Controls.Add(actions);
-        panel.Controls.Add(log);
+        panel.Controls.Add(progress); panel.Controls.Add(log);
         var detected=Core.Detect();
         var prism=detected.FirstOrDefault(x=>x.Name.StartsWith("Prism Launcher"));
         if(!string.IsNullOrEmpty(prism.Path)) { mode.SelectedIndex=1; root.Text=Path.Combine(prism.Path,"instances"); }
@@ -154,8 +156,6 @@ public sealed class InstallerForm : Form
         FormClosing+=(_,e)=> { if(busy) { e.Cancel=true; cts?.Cancel(); Note("Cancelando; esperá a que termine la operación."); } };
     }
     static Control Row(Control field,string text,Action action) { var row=new FlowLayoutPanel{ Width=760,Height=34 }; var b=new Button{Text=text,AutoSize=true}; b.Click+=(_,_)=>action(); row.Controls.AddRange(new[]{field,b}); return row; }
-    static void Choose(TextBox field,string filter) { using var d=new OpenFileDialog{Filter=filter}; if(d.ShowDialog()==DialogResult.OK) field.Text=d.FileName; }
-    static void Open(string path)=>Process.Start(new ProcessStartInfo(path){UseShellExecute=true});
     void Note(string s)=>log.AppendText(s+Environment.NewLine);
     async Task Install()
     {
@@ -167,13 +167,18 @@ public sealed class InstallerForm : Form
             if (!Directory.Exists(target)) Directory.CreateDirectory(target);
             using var gate=new FileStream(Path.Combine(target,".extremo-install.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
             cts=new CancellationTokenSource(TimeSpan.FromMinutes(30)); var ct=cts.Token; busy=true;
-            install.Enabled=false; cancel.Enabled=true; mode.Enabled=false; root.Enabled=false;
+            install.Enabled=false; cancel.Enabled=true; mode.Enabled=false; root.Enabled=false; progress.Visible=true;
             var selected=mode.SelectedIndex;
+            if(selected==0 && !File.Exists(Path.Combine(target,"launcher_profiles.json")))
+                throw new InvalidOperationException("Abrí el launcher oficial una vez y cerralo para que cree su configuración, o elegí la carpeta correcta.");
+            if((selected==0 && (Process.GetProcessesByName("MinecraftLauncher").Length>0 || Process.GetProcessesByName("javaw").Length>0)) ||
+                (selected==1 && Process.GetProcessesByName("prismlauncher").Length>0))
+                throw new InvalidOperationException("Cerrá Minecraft y el launcher antes de instalar.");
             stage=Path.Combine(target,".extremo-stage-"+Guid.NewGuid().ToString("N")); Directory.CreateDirectory(stage);
             var game=Path.Combine(stage,selected==1?".minecraft":"game"); Directory.CreateDirectory(Path.Combine(game,"mods"));
-            Note("Descargando y verificando Extreme 3 Mechanics�");
+            Note("Descargando y verificando Extreme 3 Mechanics…");
             await Automatic.Fetch(release.ModUrl,Path.Combine(game,"mods",release.ModFile),release.ModSha256,ct);
-            Note("Preparando Java 21 para esta instancia�");
+            Note("Preparando Java 21 para esta instancia…");
             var javaPath=await Automatic.Java(stage,release,ct);
             var javaRelative=Path.GetRelativePath(stage,javaPath);
             var final=Path.Combine(target,"Extremo3-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N")[..6]);
@@ -181,7 +186,7 @@ public sealed class InstallerForm : Form
             {
                 var profiles=Path.Combine(target,"launcher_profiles.json");
                 if(!File.Exists(profiles))
-                    throw new InvalidOperationException("Primero abrí y ejecutá Minecraft Java 1.21.1 desde el launcher oficial una vez; después cerralo. También podés elegir otra carpeta del launcher.");
+                    throw new InvalidOperationException("Abrí el launcher oficial una vez y cerralo, o elegí su carpeta correcta.");
                 if(Process.GetProcessesByName("MinecraftLauncher").Length>0 || Process.GetProcessesByName("javaw").Length>0)
                     throw new InvalidOperationException("Cerrá Minecraft y el launcher antes de instalar.");
                 Note("Comprobando Java 21 de 64 bits…"); await Core.CheckJava(javaPath,ct);
@@ -191,7 +196,7 @@ public sealed class InstallerForm : Form
                 // Work in a private launcher root: official installer cannot edit existing user profiles.
                 var neoRoot=Path.Combine(stage,"loader"); Directory.CreateDirectory(neoRoot);
                 File.WriteAllText(Path.Combine(neoRoot,"launcher_profiles.json"),"{\"profiles\":{}}");
-                Note("Descargando Minecraft 1.21.1 desde Mojang y verificando sus hashes�");
+                Note("Descargando Minecraft 1.21.1 desde Mojang y verificando sus hashes…");
                 await Automatic.Vanilla(neoRoot,release,ct);
                 Note("Instalando NeoForge en un área privada; puede tardar varios minutos…");
                 var output=await Core.Run(javaPath,new[]{"-jar",installer,"--installClient",neoRoot},stage,ct);
@@ -205,6 +210,9 @@ public sealed class InstallerForm : Form
                 Merge(Path.Combine(neoRoot,"versions","1.21.1"),Path.Combine(target,"versions","1.21.1"));
                 Merge(Path.Combine(neoRoot,"libraries"),Path.Combine(target,"libraries"));
                 Merge(Path.Combine(neoRoot,"versions",version),Path.Combine(target,"versions",version));
+                if(!Path.GetFullPath(neoRoot).StartsWith(Path.GetFullPath(stage)+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))
+                    throw new IOException("Carpeta temporal inesperada.");
+                Core.CheckNoLinks(neoRoot); Directory.Delete(neoRoot,true); File.Delete(installer);
                 var before=File.ReadAllBytes(profiles);
                 var doc=JsonNode.Parse(before)!; var entries=doc["profiles"] as JsonObject ?? throw new InvalidDataException("Perfiles inválidos.");
                 var key="extremo3-"+Guid.NewGuid().ToString("N");
@@ -219,11 +227,11 @@ public sealed class InstallerForm : Form
             else if(selected==1)
             {
                 if(Process.GetProcessesByName("prismlauncher").Length>0)
-                    throw new InvalidOperationException("Cerr� Prism y volv� a pulsar Instalar.");
+                    throw new InvalidOperationException("Cerrá Prism y volvé a pulsar Instalar.");
                 Core.WritePrism(stage,release);
                 File.AppendAllText(Path.Combine(stage,"instance.cfg"),"OverrideJavaLocation=true\nJavaPath="+Path.Combine(final,javaRelative).Replace('\\','/')+"\n");
                 ct.ThrowIfCancellationRequested(); Directory.Move(stage,final); stage=null;
-                Note("Listo. Abr� Prism y eleg� �Extremo 3 - 1.21.1�. En el primer inicio Prism descargar� Minecraft y NeoForge autom�ticamente.");
+                Note("Listo. Abrí Prism y elegí «Extremo 3 - 1.21.1». En el primer inicio Prism descargará Minecraft y NeoForge automáticamente.");
             }
             else
             {
@@ -240,16 +248,10 @@ public sealed class InstallerForm : Form
         finally
         {
             if(stage!=null && Directory.Exists(stage)) { try { Directory.Delete(stage,true); } catch(IOException) { Note("Archivos temporales conservados en: "+stage); } }
-            busy=false; install.Enabled=true; cancel.Enabled=false; mode.Enabled=true; root.Enabled=true;
+            busy=false; install.Enabled=true; cancel.Enabled=false; mode.Enabled=true; root.Enabled=true; progress.Visible=false;
             cts?.Dispose(); cts=null;
             if(complete) Note("No se solicitaron credenciales. Conservá tus mundos y usá la misma versión que el servidor.");
         }
-    }
-    static string FindJava()
-    {
-        foreach(var p in (Environment.GetEnvironmentVariable("PATH")??"").Split(Path.PathSeparator))
-        { var f=Path.Combine(p,"java.exe"); if(File.Exists(f)) return Path.GetFullPath(f); }
-        throw new IOException("Seleccioná java.exe mediante Buscar.");
     }
     static void Merge(string source,string dest)
     {
