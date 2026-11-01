@@ -1,0 +1,14 @@
+{
+  "minecraft": "1.21.1",
+  "neoForge": "21.1.265",
+  "neoSha256": "a547ccc30a80a675d1c61d04b55d10c45c39a86971e09731482c50a24399d1a2",
+  "fileId": 8401810,
+  "modFile": "mcextremo-v14.jar",
+  "modSha256": "",
+  "reviewed": false,
+  "modUrl": "",
+  "javaUrl": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jre_x64_windows_hotspot_21.0.13_9.zip",
+  "javaSha256": "2332c0b4cff6bed722da3567c91d5e47568bcba863fa4945d0a8d6fc76158628",
+  "minecraftMetadataUrl": "https://piston-meta.mojang.com/v1/packages/018296bcb207bea6fd25b05f08eee3942dcec406/1.21.1.json",
+  "minecraftMetadataSha1": "018296bcb207bea6fd25b05f08eee3942dcec406"
+}
